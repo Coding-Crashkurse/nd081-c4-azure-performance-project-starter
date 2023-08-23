@@ -38,7 +38,7 @@ app = Flask(__name__)
 # Requests
 middleware = FlaskMiddleware(
     app,
-    exporter=AzureExporter(connection_string="InstrumentationKey=75b36801-bb3d-44fa-aa62-8fa210b1178b"),
+    exporter=AzureExporter(connection_string=CONNSTR),
     sampler=ProbabilitySampler(rate=1.0),
 )
 
@@ -76,14 +76,15 @@ def index():
 
     if request.method == 'GET':
 
-        with tracer.start_as_current_span("VoteTracing"):
-            # Get current values and trace cat vote
-            vote1 = r.get(button1).decode('utf-8')
-            tracer.current_span().set_attribute("cat_vote", vote1)
+        # Get current values
+        vote1 = r.get(button1).decode('utf-8')
+        with tracer.span(name="Total {} Voted: {}".format(button1, vote1)) as span:
+            span.add_attribute("cat_vote", vote1)
 
-            # Get current values and trace dog vote
-            vote2 = r.get(button2).decode('utf-8')
-            tracer.current_span().set_attribute("dog_vote", vote2)
+        vote2 = r.get(button2).decode('utf-8')
+        with tracer.span(name="Total {} Voted: {}".format(button2, vote2)) as span:
+            span.add_attribute("dog_vote", vote2)
+
 
         # Return index with values
         return render_template("index.html", value1=int(vote1), value2=int(vote2), button1=button1, button2=button2, title=title)
